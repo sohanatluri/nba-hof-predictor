@@ -9,13 +9,16 @@ LETTERS = "abcdefghijklmnopqrstuvwxyz"
 
 def scrape_player_data(current_letter):
     url = BASE_URL + "/players/" + current_letter + "/"
-    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3"}
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3"}
 
-    response = requests.get(url, headers=headers)  # GET request to the URL with headers
+    # GET request to the URL with headers
+    response = requests.get(url, headers=headers)
 
     # Check if the response status code indicates denial
     if response.status_code != 200:
-        print(f"Request denied or failed with status code: {response.status_code}")
+        print(
+            f"Request denied or failed with status code: {response.status_code}")
         return []
 
     # Parse the HTML content
@@ -32,10 +35,28 @@ def scrape_player_data(current_letter):
 
     # finding the rows of the table
     for row in tbody.find_all("tr"):
-        name = row.find("th", {"data-stat": "player"}).text.strip()
+        #find player URL
+        player_cell = row.find("th", {"data-stat": "player"})
+        link = player_cell.find("a")
 
+        if not link:
+            continue
+        
+        player_url = BASE_URL + link["href"]
+
+        # Check if the name contains an asterisk
+        name = row.find("th", {"data-stat": "player"}).text.strip()
+        hof = 1 if "*" in name else 0
+        name = name.replace("*", "")
+
+        # Extract start and end years
         start_year = row.find("td", {"data-stat": "year_min"}).text.strip()
         end_year = row.find("td", {"data-stat": "year_max"}).text.strip()
+
+        # Calculate career length and filter out players with careers < 4 years
+        if int(end_year) - int(start_year) < 4:
+            continue
+
         pos = row.find("td", {"data-stat": "pos"}).text.strip()
         height = row.find("td", {"data-stat": "height"}).text.strip()
         weight = row.find("td", {"data-stat": "weight"}).text.strip()
@@ -47,7 +68,9 @@ def scrape_player_data(current_letter):
             "end_year": end_year,
             "pos": pos,
             "height": height,
-            "weight": weight
+            "weight": weight,
+            "hof": hof,
+            "player_url": player_url
         })
 
     return players
@@ -59,12 +82,12 @@ def main():
         print("scrapping for letter " + letter)
         player = scrape_player_data(letter)
         all_players.extend(player)
+
     # Create a DataFrame from the list of players
     df = pd.DataFrame(all_players)
-    # Save the DataFrame to a CSV file
-    df.to_csv("players_data.csv", index=False)
 
-    
+    # Save the DataFrame to a CSV file
+    df.to_csv("../data/players_data.csv", index=False)
 
 
 if __name__ == "__main__":
