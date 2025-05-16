@@ -54,7 +54,7 @@ def scrape_player_data(current_letter):
         end_year = row.find("td", {"data-stat": "year_max"}).text.strip()
 
         # Calculate career length and filter out players with careers < 4 years
-        if int(end_year) - int(start_year) < 4:
+        if int(end_year) - int(start_year) < 4 or int(end_year) < 1976:
             continue
 
         pos = row.find("td", {"data-stat": "pos"}).text.strip()
