@@ -47,7 +47,7 @@ def get_player_stats(player_url):
         return []
 
     # finding the rows of the table
-    for row in tfoot.find_all("tr", {"id": "totals_stats.20 Yrs"}):
+    for row in tfoot.find_all("tr"):
         stats_row = {}
 
         # Extract the stats from the row
@@ -69,7 +69,7 @@ def get_player_stats(player_url):
         print(f"No footer found for player {player_url}")
         return []
 
-    for row in tfoot.find_all("tr", {"id": "advanced.20 Yrs"}):
+    for row in tfoot.find_all("tr"):
         stats_row = {}
 
         # Extract the stats from the row
@@ -87,11 +87,10 @@ def main():
 
     players_stats = []
     for url in df["player_url"]:
+        print(url)
         print("scraping stats for " + url)
         stats = get_player_stats(url)
-        print(stats)
-        if stats:
-            players_stats.append(stats)
+        players_stats.append(stats)
         
         # Sleep for a random time between 1 and 3 seconds to avoid being blocked
         time.sleep(random.uniform(1, 3))
