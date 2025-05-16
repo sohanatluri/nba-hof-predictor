@@ -3,9 +3,10 @@ import requests
 from bs4 import BeautifulSoup
 import time
 import random
+import re
 
 
-def get_player_stats(player_url):
+def get_player_stats(player_url, name):
 
     # choose random user agents to reduce the chance of being blocked
     USER_AGENTS = [
@@ -32,52 +33,35 @@ def get_player_stats(player_url):
     raw_data = BeautifulSoup(response.content, "html.parser")
 
     # find the table associated with the letter (player info)
-    totals = raw_data.find("table", {"id": "totals_stats"})
+    totals = raw_data.find("table", {"id": "advanced"})
 
     if totals is None:
         print(f"No table found for player {player_url}")
 
     # Extract the stats from the table
     stats = []
-    stats.append({"player_url": player_url})
 
     tfoot = totals.find("tfoot")
     if tfoot is None:
         print(f"No footer found for player {player_url}")
         return []
 
-    # finding the rows of the table
-    for row in tfoot.find_all("tr"):
-        stats_row = {}
+    # finding the rows of the table (pattern match on the rows that have this format)
+    career_row = tfoot.find("tr", id=re.compile(r"^advanced\.\d+ Yrs"))
+    stats_row = {}
+    stats_row["name"] = name
 
-        # Extract the stats from the row
-        for cell in row.find_all("td"):
-            stat_name = cell["data-stat"]
-            stat_value = cell.text.strip()
-            stats_row[stat_name] = stat_value
-        stats.append(stats_row)
+    # find stat associated with player
+    for stat in career_row.find_all("td"):
+        # get the stat name
+        stat_name = stat["data-stat"]
+        # get the stat value
+        stat_value = stat.text.strip()
+        # add to the stats dict
+        stats_row[stat_name] = stat_value
 
-    # find the table associated with the letter (player info)
-    advanced_stats = raw_data.find("table", {"id": "advanced"})
-
-    if advanced_stats is None:
-        print(f"No table found for player {player_url}")
-
-    # Extract the stats from the table
-    tfoot = advanced_stats.find("tfoot")
-    if tfoot is None:
-        print(f"No footer found for player {player_url}")
-        return []
-
-    for row in tfoot.find_all("tr"):
-        stats_row = {}
-
-        # Extract the stats from the row
-        for cell in row.find_all("td"):
-            stat_name = cell["data-stat"]
-            stat_value = cell.text.strip()
-            stats_row[stat_name] = stat_value
-        stats.append(stats_row)
+    # Add the stats to the list
+    stats.append(stats_row)
 
     return stats
 
@@ -86,18 +70,25 @@ def main():
     df = pd.read_csv("../data/players_data.csv")
 
     players_stats = []
+
+    players_urls = df["player_url"].values.tolist()
+    players_names = df["name"].values.tolist()
+
+    # counter to keep track of the number of players scraped. Return player name
+    i = 0
+
     for url in df["player_url"]:
-        print(url)
         print("scraping stats for " + url)
-        stats = get_player_stats(url)
-        players_stats.append(stats)
-        
+        stats = get_player_stats(url, players_names[i])
+        i += 1
+        players_stats.extend(stats)
+
         # Sleep for a random time between 1 and 3 seconds to avoid being blocked
         time.sleep(random.uniform(1, 3))
 
     # export to csv
     players_stats_df = pd.DataFrame(players_stats)
-    players_stats_df.to_csv("../data/players_stats.csv", index=False)
+    players_stats_df.to_csv("../data/advanced_stats.csv", index=False)
 
 
 if __name__ == "__main__":
