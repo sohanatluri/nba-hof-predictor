@@ -1,2 +1,2 @@
-# nba-MVP-predictor
+# nba-hof-predictor
 NBA Hall of Fame Predictor (ML Model)
