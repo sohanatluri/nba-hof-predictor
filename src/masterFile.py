@@ -89,6 +89,5 @@ non_hof_imputed[null_stat_cols] = non_hof_df.groupby('pos')[null_stat_cols].tran
 # Combine the two subsets back into one DataFrame
 master = pd.concat([hof_imputed, non_hof_imputed], axis=0).sort_index()
 
-
 # move to csv
 master.to_csv('../data/master.csv', index=False)
